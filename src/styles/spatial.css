@@ -1,0 +1,109 @@
+.os-environment {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #000000 100%);
+}
+
+/* LA CLAVE: Ocultar el video sin usar display:none */
+/* Reemplaza la clase oculta por esta para desarrollo */
+.engine-feed {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 1000;
+  /* Volteamos el video como un espejo para que tu cerebro no se confunda al mover la mano */
+  transform: scaleX(-1); 
+  background: black;
+}
+
+/* UI Elements */
+.os-workspace {
+  padding: 4rem;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.os-header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.os-header h1 {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: -1px;
+}
+
+.os-header p {
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-card {
+  height: 180px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: none; /* Ocultamos el mouse real */
+}
+
+/* Efecto hover simulado */
+.app-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-5px);
+  border-color: var(--hover-color, white);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Cursor Espacial */
+.spatial-cursor-wrapper {
+  position: fixed;
+  top: -15px; 
+  left: -15px;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spatial-cursor-core {
+  width: 8px;
+  height: 8px;
+  background: var(--cursor-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 15px white;
+}
+
+.spatial-cursor-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--cursor-ring);
+  border-radius: 50%;
+}
