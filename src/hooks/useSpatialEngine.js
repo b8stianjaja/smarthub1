@@ -2,27 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useMotionValue } from 'framer-motion';
 import { Hands } from '@mediapipe/hands';
 
-// Función auxiliar para calcular distancia 3D real
 const getDistance3D = (p1, p2) => {
   return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
 };
 
 export const useSpatialEngine = (onAction) => {
   const videoRef = useRef(null);
-  const cursorX = useMotionValue(window.innerWidth / 2);
-  const cursorY = useMotionValue(window.innerHeight / 2);
   
-  // Estado de carga para la UI
+  const cursorX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
+  const cursorY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
+  
   const [isReady, setIsReady] = useState(false);
   
   const isPinchingRef = useRef(false);
-  const pinchFramesRef = useRef(0); // Para evitar pinches accidentales (Anti-flicker)
+  const pinchFramesRef = useRef(0); 
   const lastPinchTime = useRef(0);
   const onActionRef = useRef(onAction);
-  
-  // EMA Filter más rápido (menos latencia)
-  const smoothedX = useRef(window.innerWidth / 2);
-  const smoothedY = useRef(window.innerHeight / 2);
 
   useEffect(() => {
     onActionRef.current = onAction;
@@ -34,84 +29,73 @@ export const useSpatialEngine = (onAction) => {
     
     hands.setOptions({
       maxNumHands: 1,
-      modelComplexity: 1, // 1 es el balance perfecto entre velocidad y precisión
-      minDetectionConfidence: 0.65,
-      minTrackingConfidence: 0.65
+      modelComplexity: 1, 
+      minDetectionConfidence: 0.7, 
+      minTrackingConfidence: 0.7
     });
 
     hands.onResults((results) => {
-      // Si llegamos aquí y hay resultados, la IA ya está lista
-      if (isRunning) setIsReady(true);
+      if (isRunning && !isReady) setIsReady(true);
 
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        document.querySelectorAll('.spatial-hover').forEach(el => el.classList.remove('spatial-hover'));
+        const activeHover = document.querySelector('.spatial-hover');
+        if (activeHover) activeHover.classList.remove('spatial-hover');
         document.getElementById('spatial-cursor')?.classList.remove('is-pinching');
-        pinchFramesRef.current = 0; // Reiniciar contador de pinch
+        pinchFramesRef.current = 0;
         return;
       }
       
       const hand = results.multiHandLandmarks[0];
-      const index = hand[8]; // Punta del índice
-      const thumb = hand[4]; // Punta del pulgar
-      const wrist = hand[0]; // Muñeca
-      const middleBase = hand[9]; // Base del dedo medio
+      const index = hand[8];
+      const thumb = hand[4];
+      const wrist = hand[0];
+      const middleBase = hand[9];
 
-      // 1. Movimiento del Cursor (Filtro EMA super rápido: 60% nuevo, 40% viejo)
-      const rawX = (1 - index.x) * window.innerWidth;
-      const rawY = index.y * window.innerHeight;
-
-      smoothedX.current = smoothedX.current + (rawX - smoothedX.current) * 0.6;
-      smoothedY.current = smoothedY.current + (rawY - smoothedY.current) * 0.6;
+      // Coordenadas exactas mapeadas a la pantalla
+      const targetX = (1 - index.x) * window.innerWidth;
+      const targetY = index.y * window.innerHeight;
       
-      cursorX.set(smoothedX.current);
-      cursorY.set(smoothedY.current);
+      cursorX.set(targetX);
+      cursorY.set(targetY);
 
-      // 2. Pellizco Dinámico Inteligente (Independiente de la distancia a la cámara)
+      // Detección de Pinch
       const pinchDistance = getDistance3D(thumb, index);
-      const handSize = getDistance3D(wrist, middleBase); // Usamos la palma como referencia de escala
-      
-      // Proporción: Si la distancia de los dedos es menor al 22% del tamaño de la mano, es un pinch
-      const pinchRatio = pinchDistance / handSize;
-      const isCurrentlyPinchingRaw = pinchRatio < 0.22;
+      const handSize = getDistance3D(wrist, middleBase);
+      const isCurrentlyPinchingRaw = (pinchDistance / handSize) < 0.22;
 
-      // 3. Sistema Anti-Flicker (Exigir 3 fotogramas consecutivos de pinch para validarlo)
-      if (isCurrentlyPinchingRaw) {
-        pinchFramesRef.current += 1;
-      } else {
-        pinchFramesRef.current = 0;
-      }
-
+      // Sistema Anti-Flicker para evitar clicks fantasmas
+      pinchFramesRef.current = isCurrentlyPinchingRaw ? pinchFramesRef.current + 1 : 0;
       const isPinchingConfirmed = pinchFramesRef.current >= 3;
 
-      // Actualizar UI del cursor
       const cursorDOM = document.getElementById('spatial-cursor');
-      if (isPinchingConfirmed) {
+      if (isPinchingConfirmed && !cursorDOM?.classList.contains('is-pinching')) {
         cursorDOM?.classList.add('is-pinching');
-      } else {
+      } else if (!isPinchingConfirmed && cursorDOM?.classList.contains('is-pinching')) {
         cursorDOM?.classList.remove('is-pinching');
       }
 
-      // 4. Detección de colisión (ElementFromPoint)
-      const hitElement = document.elementFromPoint(smoothedX.current, smoothedY.current);
+      // Colisión ultra rápida (el !important en CSS pointer-events evita que choque consigo mismo)
+      const hitElement = document.elementFromPoint(targetX, targetY);
       const interactable = hitElement?.closest('.spatial-interactable');
+      const currentHover = document.querySelector('.spatial-interactable.spatial-hover');
 
-      document.querySelectorAll('.spatial-interactable.spatial-hover').forEach(el => {
-        if (el !== interactable) el.classList.remove('spatial-hover');
-      });
-
-      if (interactable && !isPinchingConfirmed) {
+      if (currentHover && currentHover !== interactable) {
+        currentHover.classList.remove('spatial-hover');
+      }
+      
+      if (interactable && !isPinchingConfirmed && currentHover !== interactable) {
         interactable.classList.add('spatial-hover');
       }
 
-      // 5. Ejecución del Click con cooldown
+      // Ejecución del Click
       const now = Date.now();
-      if (isPinchingConfirmed && !isPinchingRef.current && (now - lastPinchTime.current > 600)) {
+      if (isPinchingConfirmed && !isPinchingRef.current && (now - lastPinchTime.current > 500)) {
         if (interactable) {
           const action = interactable.dataset.spatialAction;
           const targetId = interactable.dataset.spatialId;
           
           interactable.classList.add('spatial-active');
-          setTimeout(() => interactable.classList.remove('spatial-active'), 250);
+          setTimeout(() => interactable.classList.remove('spatial-active'), 150);
           
           if (onActionRef.current) onActionRef.current(action, targetId);
           lastPinchTime.current = now;
@@ -123,7 +107,9 @@ export const useSpatialEngine = (onAction) => {
 
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 } } 
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play(); 
@@ -131,7 +117,7 @@ export const useSpatialEngine = (onAction) => {
           const tick = async () => {
             if (!isRunning) return;
             if (videoRef.current && videoRef.current.readyState >= 2) {
-              try { await hands.send({ image: videoRef.current }); } catch (e) {}
+              await hands.send({ image: videoRef.current });
             }
             requestAnimationFrame(tick);
           };
@@ -149,7 +135,7 @@ export const useSpatialEngine = (onAction) => {
       hands.close();
       if (videoRef.current?.srcObject) videoRef.current.srcObject.getTracks().forEach(t => t.stop());
     };
-  }, []);
+  }, [cursorX, cursorY, isReady]);
 
   return { videoRef, cursorX, cursorY, isReady };
 };

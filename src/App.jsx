@@ -2,29 +2,34 @@ import { useState, useCallback } from 'react';
 import { useSpatialEngine } from './hooks/useSpatialEngine';
 import SpatialCursor from './components/spatial/SpatialCursor';
 import AppGrid from './components/ui/AppGrid';
+import { sendBridgeCommand } from './core/bridge';
 
 function App() {
   const [activeApp, setActiveApp] = useState(null);
 
   const handleSpatialAction = useCallback((action, targetId) => {
     if (action === 'OPEN_APP') {
-      setActiveApp(targetId);
+      // Diferenciamos apps web vs apps locales de SmartHub
+      const webApps = ['netflix', 'youtube', 'disney', 'hbomax', 'spotify'];
+      
+      if (webApps.includes(targetId)) {
+        sendBridgeCommand('OPEN_APP', { appId: targetId }); // Enviamos a la extensión
+      } else {
+        setActiveApp(targetId); // Abrimos dentro del Hub (ej: Galería)
+      }
     } else if (action === 'GO_HOME') {
       setActiveApp(null);
     }
   }, []);
 
-  // Extraemos isReady del hook
   const { videoRef, cursorX, cursorY, isReady } = useSpatialEngine(handleSpatialAction);
 
   return (
     <div className="os-environment">
       <video ref={videoRef} className="engine-feed" playsInline muted />
       
-      {/* El cursor solo se muestra cuando la IA está lista */}
       {isReady && <SpatialCursor x={cursorX} y={cursorY} />}
       
-      {/* Pantalla de Carga */}
       {!isReady && (
         <div className="spatial-loader">
           <div className="loader-ring"></div>
@@ -33,7 +38,6 @@ function App() {
         </div>
       )}
 
-      {/* Interfaz Principal */}
       <div className={`os-workspace ${isReady ? 'fade-in' : 'hidden'}`}>
         {activeApp === null ? (
           <>
