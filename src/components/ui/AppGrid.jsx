@@ -1,10 +1,10 @@
 const APPS = [
-  { id: 'netflix', name: 'Netflix', color: '#E50914', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=Netflix' },
-  { id: 'youtube', name: 'YouTube', color: '#FF0000', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=YouTube' },
-  { id: 'disney', name: 'Disney+', color: '#113CCF', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=Disney+' },
-  { id: 'hbomax', name: 'Max', color: '#002BE7', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=Max' },
-  { id: 'spotify', name: 'Spotify', color: '#1DB954', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=Spotify' },
-  { id: 'galeria', name: 'Galería', color: '#007AFF', imgPlaceholder: 'https://via.placeholder.com/200/222/fff?text=Galeria' }
+  { id: 'netflix', name: 'Netflix', color: '#E50914', imgPlaceholder: '/logos/netflix.png' },
+  { id: 'youtube', name: 'YouTube', color: '#FF0000', imgPlaceholder: '/logos/youtube' },
+  { id: 'disney', name: 'Disney+', color: '#113CCF', imgPlaceholder: '/logos/disney' },
+  { id: 'hbomax', name: 'Max', color: '#002BE7', imgPlaceholder: '/logos/hbomax' },
+  { id: 'spotify', name: 'Spotify', color: '#1DB954', imgPlaceholder: '/logos/spotify' },
+  { id: 'galeria', name: 'Galería', color: '#007AFF', imgPlaceholder: '/logos/galeria' }
 ];
 
 const AppGrid = () => {
